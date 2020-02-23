@@ -235,7 +235,11 @@ private:
     {
         if(ec)
         {
-            fail(ec, "accept");
+            if (ec != boost::system::errc::operation_canceled)
+            {
+                fail(ec, "accept");
+            }
+            return;
         }
         else
         {
