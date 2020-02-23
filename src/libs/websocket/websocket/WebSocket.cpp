@@ -45,7 +45,7 @@ public:
     {}
 
     // Get on the correct executor
-    void run(WebSocket::Accept_fun aOnAccept)
+    void run(NetworkContext::Accept_fun aOnAccept)
     {
         // We need to be executing within a strand to perform async operations
         // on the I/O objects in this session. Although not strictly necessary
@@ -60,7 +60,7 @@ public:
     }
 
     // Start the asynchronous operation
-    void on_run(WebSocket::Accept_fun aOnAccept)
+    void on_run(NetworkContext::Accept_fun aOnAccept)
     {
         // Set suggested timeout settings for the websocket
         ws_.set_option(
@@ -83,7 +83,7 @@ public:
                 std::move(aOnAccept)));
     }
 
-    void on_accept(WebSocket::Accept_fun aOnAccept, beast::error_code ec)
+    void on_accept(NetworkContext::Accept_fun aOnAccept, beast::error_code ec)
     {
         if(ec) return fail(ec, "accept");
 
@@ -169,14 +169,15 @@ public:
 //------------------
 
 // Accepts incoming connections and launches the sessions
+// TODO no need to enable shared from this
 class listener : public std::enable_shared_from_this<listener>
 {
     net::io_context& ioc_;
     tcp::acceptor acceptor_;
-    WebSocket::Accept_fun onAccept_;
+    NetworkContext::Accept_fun onAccept_;
 
 public:
-    listener(net::io_context& ioc, tcp::endpoint endpoint, WebSocket::Accept_fun aOnAccept) :
+    listener(net::io_context& ioc, tcp::endpoint endpoint, NetworkContext::Accept_fun aOnAccept) :
         ioc_(ioc),
         acceptor_(ioc),
         onAccept_(aOnAccept)
@@ -216,6 +217,12 @@ public:
         }
     }
 
+    //~listener()
+    //{
+    //    acceptor_.cancel();
+    //    acceptor_.close();
+    //}
+
     // Start accepting incoming connections
     void run()
     {
@@ -228,7 +235,7 @@ private:
         // The new connection gets its own strand
         acceptor_.async_accept(
             net::make_strand(ioc_),
-            std::bind(&listener::on_accept, shared_from_this(), _1, _2));
+            std::bind(&listener::on_accept, this, _1, _2));
     }
 
     void on_accept(beast::error_code ec, tcp::socket socket)
@@ -274,19 +281,6 @@ WebSocket::WebSocket(WebSocket && aOther) :
     mImpl(std::move(aOther.mImpl))
 {}
 
-void WebSocket::Listen(const std::string & aUrl, unsigned short aPort,
-                       Accept_fun aOnAccept)
-{
-    std::make_shared<listener>(gIoc,
-                               tcp::endpoint{net::ip::make_address(aUrl), aPort},
-                               std::move(aOnAccept))->run();
-}
-
-void WebSocket::StartNetworking()
-{
-    static std::thread ioThread{[](){ ad::WebSocket::gIoc.run(); }};
-}
-
 void WebSocket::send(const std::string & aText)
 {
     mImpl->session.write(net::const_buffer{aText.data(), aText.size()});
@@ -295,6 +289,38 @@ void WebSocket::send(const std::string & aText)
 void WebSocket::onmessage(Message_fun aOnMessage)
 {
     mImpl->session.registerRead(aOnMessage);
+}
+
+struct NetworkContext::Impl
+{
+    Impl(boost::asio::io_context & aIoc,
+         const std::string & aUrl,
+         unsigned short aPort,
+         Accept_fun aOnAccept) :
+            listener(aIoc,
+                     tcp::endpoint{net::ip::make_address(aUrl), aPort},
+                     std::move(aOnAccept))
+    {
+        listener.run();
+    }
+
+    listener listener;
+};
+
+NetworkContext::NetworkContext(const std::string & aUrl,
+                               unsigned short aPort,
+                               Accept_fun aOnAccept):
+    mImpl(std::make_unique<Impl>(mIoc, aUrl, aPort, std::move(aOnAccept)))
+{}
+
+NetworkContext::~NetworkContext()
+{}
+
+void NetworkContext::run()
+{
+    mIOThread = std::unique_ptr<std::thread, std::function<void(std::thread*)>>(
+            new std::thread{[this](){ mIoc.run(); }},
+            [](std::thread *obj){obj->join(); delete obj;});
 }
 
 } // namespace ad

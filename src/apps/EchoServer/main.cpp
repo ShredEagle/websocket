@@ -6,7 +6,7 @@ int main(int argc, char ** argv)
 {
     std::vector<ad::WebSocket> sockets;
 
-    ad::WebSocket::Listen("0.0.0.0", 4321, [&sockets](ad::WebSocket aWS)
+    ad::NetworkContext network("0.0.0.0", 4321, [&sockets](ad::WebSocket aWS)
     {
         sockets.push_back(std::move(aWS));
         sockets.back().onmessage([&socket = sockets.back()](const std::string & aData)
@@ -16,7 +16,7 @@ int main(int argc, char ** argv)
         });
     });
 
-    ad::WebSocket::StartNetworking();
+    network.run();
 
     for(std::string command; std::cin && (command != "q"); std::cin >> command)
     {
