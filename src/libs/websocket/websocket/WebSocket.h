@@ -53,8 +53,8 @@ public:
 
 private:
     // The IO thread must be destructed *after* the listener in mImpl
-    std::unique_ptr<std::thread, std::function<void(std::thread*)>> mIOThread;
     boost::asio::io_context mIoc;
+    std::unique_ptr<std::thread, std::function<void(std::thread*)>> mIOThread;
     std::unique_ptr<Impl> mImpl;
 };
 
