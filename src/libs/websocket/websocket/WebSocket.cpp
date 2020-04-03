@@ -264,10 +264,10 @@ private:
 struct WebSocket::Impl
 {
     Impl(session aSession) :
-        session(std::move(aSession))
+        isession(std::move(aSession))
     {}
 
-    session session;
+    session isession;
 };
 
 WebSocket::WebSocket(std::unique_ptr<Impl> aImpl) :
@@ -283,12 +283,12 @@ WebSocket::WebSocket(WebSocket && aOther) :
 
 void WebSocket::send(const std::string & aText)
 {
-    mImpl->session.write(net::const_buffer{aText.data(), aText.size()});
+    mImpl->isession.write(net::const_buffer{aText.data(), aText.size()});
 }
 
 void WebSocket::onmessage(Message_fun aOnMessage)
 {
-    mImpl->session.registerRead(aOnMessage);
+    mImpl->isession.registerRead(aOnMessage);
 }
 
 struct NetworkContext::Impl
@@ -297,14 +297,14 @@ struct NetworkContext::Impl
          const std::string & aUrl,
          unsigned short aPort,
          Accept_fun aOnAccept) :
-            listener(aIoc,
-                     tcp::endpoint{net::ip::make_address(aUrl), aPort},
-                     std::move(aOnAccept))
+            ilistener{aIoc,
+                      tcp::endpoint{net::ip::make_address(aUrl), aPort},
+                      std::move(aOnAccept)}
     {
-        listener.run();
+        ilistener.run();
     }
 
-    listener listener;
+    listener ilistener;
 };
 
 NetworkContext::NetworkContext(const std::string & aUrl,
