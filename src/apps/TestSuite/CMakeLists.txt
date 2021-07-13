@@ -1,24 +1,24 @@
-project(TestSuite VERSION "${CMAKE_PROJECT_VERSION}")
+set(TARGET_NAME TestSuite)
 
-set(${PROJECT_NAME}_HEADERS
+set(${TARGET_NAME}_HEADERS
     catch.hpp
 )
 
-set(${PROJECT_NAME}_SOURCES
+set(${TARGET_NAME}_SOURCES
 )
 
-add_executable(${PROJECT_NAME}
+add_executable(${TARGET_NAME}
     main.cpp
-    ${${PROJECT_NAME}_SOURCES}
-    ${${PROJECT_NAME}_HEADERS})
+    ${${TARGET_NAME}_SOURCES}
+    ${${TARGET_NAME}_HEADERS})
 
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${TARGET_NAME}
     PRIVATE
         ad::websocket
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(${TARGET_NAME} PROPERTIES
                       VERSION "${${PROJECT_NAME}_VERSION}"
 )
 
@@ -27,4 +27,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 ## Install
 ##
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${TARGET_NAME})
