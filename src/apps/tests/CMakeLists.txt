@@ -1,4 +1,4 @@
-set(TARGET_NAME TestSuite)
+set(TARGET_NAME tests)
 
 set(${TARGET_NAME}_HEADERS
     catch.hpp
