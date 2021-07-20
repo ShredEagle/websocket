@@ -31,6 +31,8 @@ cmc_find_dependencies()
 target_link_libraries(${TARGET_NAME}
     PUBLIC
         Boost::boost
+    PRIVATE
+        $<$<PLATFORM_ID:Linux>:Threads::Threads>
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
