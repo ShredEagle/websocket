@@ -1,4 +1,5 @@
-set(TARGET_NAME tests)
+string(TOLOWER ${PROJECT_NAME} _lower_project_name)
+set(TARGET_NAME ${_lower_project_name}_tests)
 
 set(${TARGET_NAME}_HEADERS
     catch.hpp
