@@ -1,5 +1,6 @@
 from conans import ConanFile, tools
 from conan.tools.cmake import CMake
+from conan.tools.files import copy
 
 from os import path
 
@@ -22,10 +23,10 @@ class WebsocketConan(ConanFile):
         "build_tests": False,
     }
 
-    requires = ("boost/1.77.0",)
+    requires = ("boost/1.79.0",)
 
     build_policy = "missing"
-    generators = "cmake_paths", "CMakeToolchain"
+    generators = "CMakeDeps", "CMakeToolchain"
 
     scm = {
         "type": "git",
@@ -34,9 +35,12 @@ class WebsocketConan(ConanFile):
         "submodule": "recursive",
     }
 
+    python_requires="shred_conan_base/0.0.2@adnn/develop"
+    python_requires_extend="shred_conan_base.ShredBaseConanFile"
+
 
     def configure(self):
-        tools.check_min_cppstd(self, "14")
+        tools.check_min_cppstd(self, "17")
 
 
     def _generate_cmake_configfile(self):
@@ -45,8 +49,15 @@ class WebsocketConan(ConanFile):
         with open("conanuser_config.cmake", "w") as config:
             config.write("message(STATUS \"Including user generated conan config.\")\n")
             # avoid path.join, on Windows it outputs '\', which is a string escape sequence.
-            config.write("include(\"{}\")\n".format("${CMAKE_CURRENT_LIST_DIR}/conan_paths.cmake"))
+            #config.write("include(\"{}\")\n".format("${CMAKE_CURRENT_LIST_DIR}/conan_paths.cmake"))
             config.write("set({} {})\n".format("BUILD_tests", self.options.build_tests))
+            config.write("set(CMAKE_EXPORT_COMPILE_COMMANDS 1)\n".format("BUILD_tests", self.options.build_tests))
+
+
+    def export_sources(self):
+        # The path of the CMakeLists.txt we want to export is one level above
+        folder = path.join(self.recipe_folder, "..")
+        copy(self, "*.txt", folder, self.export_sources_folder)
 
 
     def generate(self):
@@ -68,6 +79,10 @@ class WebsocketConan(ConanFile):
         cmake = self._configure_cmake()
         cmake.install()
 
-
     def package_info(self):
-        self.cpp_info.libs = tools.collect_libs(self)
+        #self.cpp_info.libs = tools.collect_libs(self)
+        self.cpp_info.set_property("cmake_find_mode", "none")
+        if self.folders.build_folder:
+            self.cpp_info.builddirs.append(self.folders.build_folder)
+        else:
+            self.cpp_info.builddirs.append(path.join('lib', 'cmake'))
